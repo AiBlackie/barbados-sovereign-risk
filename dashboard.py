@@ -7,31 +7,45 @@ import json
 import os
 from navigator.true_debt import TrueDebtCalculator
 from navigator.peg_defense import PegDefenseMonitor
-
 from report_generator import generate_sovereign_report
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="Sovereign Risk Navigator", 
-    page_icon="🌍", 
+    page_title="Barbados Sovereign Risk Brief",
+    page_icon="🇧🇧",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'About': "### Sovereign Risk Navigator\nA deterministic forensic engine consolidating public sector liabilities under IPSAS 35.\n\n**Author:** Matthew A. A. Blackman\n\n**Data Sources:** Government of Barbados, CBB, and IMF 2026 Article IV."
+    }
 )
 
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
     .block-container { padding-top: 2rem; }
-    .metric-label { font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+    .metric-label { font-size: 14px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
     .metric-value { font-size: 36px; font-weight: 800; margin-top: -5px; }
     .metric-delta { font-size: 14px; font-weight: 600; }
-    .alert-box { padding: 20px; border-radius: 5px; background-color: #fff3e0; border-left: 5px solid #e65100; color: #e65100; font-weight: bold; margin-bottom: 20px; font-size: 18px; }
-    .success-box { padding: 20px; border-radius: 5px; background-color: #e8f5e9; border-left: 5px solid #2e7d32; color: #2e7d32; font-weight: bold; margin-bottom: 20px; font-size: 18px; }
-    .pillar-text { font-size: 18px; line-height: 1.6; margin-bottom: 20px; }
-    .evidence-box { background-color: #1e1e1e; padding: 15px; border-radius: 5px; border-left: 4px solid #1f77b4; margin-top: 10px; margin-bottom: 10px;}
-    .evidence-quote { font-style: italic; color: #ddd; font-size: 15px; margin-bottom: 10px; }
-    .evidence-source { font-weight: bold; color: #aaa; font-size: 13px; }
-    .footnote { font-size: 11px; color: #999; margin-top: -8px; margin-bottom: 15px; }
+    .alert-box { padding: 20px; border-radius: 5px; background-color: #2a1212; border-left: 5px solid #dc2626; color: #fca5a5; font-weight: bold; margin-bottom: 20px; font-size: 18px; }
+    .success-box { padding: 20px; border-radius: 5px; background-color: #064e3b; border-left: 5px solid #10b981; color: #6ee7b7; font-weight: bold; margin-bottom: 20px; font-size: 18px; }
+    .pillar-text { font-size: 18px; line-height: 1.6; margin-bottom: 20px; color: #d1d5db; }
+    .evidence-box { background-color: #1f2937; padding: 15px; border-radius: 5px; border-left: 4px solid #3b82f6; margin-top: 10px; margin-bottom: 10px;}
+    .evidence-quote { font-style: italic; color: #d1d5db; font-size: 15px; margin-bottom: 10px; }
+    .evidence-source { font-weight: bold; color: #9ca3af; font-size: 13px; }
+    .footnote { font-size: 11px; color: #6b7280; margin-top: -8px; margin-bottom: 15px; }
+    
+    /* Make the Addendum button red to match the primary */
+    div[data-testid="stDownloadButton"] button[kind="secondary"] {
+        background-color: #b00020;
+        color: white;
+        border: 1px solid #b00020;
+    }
+    div[data-testid="stDownloadButton"] button[kind="secondary"]:hover {
+        background-color: #8a0018;
+        border: 1px solid #8a0018;
+        color: white;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -51,7 +65,6 @@ with open(STATE_FILE, "r") as f:
     raw_state = json.load(f)
     ext = raw_state["external_sector"]
 
-# HARDCODED EVIDENCE
 FORENSIC_EVIDENCE = debt_data["forensic_evidence"]
 
 # --- SIDEBAR: SHOCK SIMULATOR ---
@@ -85,21 +98,47 @@ with st.sidebar:
     else:
         st.success("Reserves are stable under these conditions.")
 
-# --- MAIN PAGE ---
-st.title("🌍 Sovereign Risk Navigator: Barbados")
-st.markdown("*A forensic consolidation of public sector liabilities and external buffer adequacy.*")
+    st.divider()
+    st.info("📑 **Update:** A methodological addendum addressing the Nov 18 debt swap is available at the top of the page.")
 
-# --- DOWNLOAD BUTTON ---
-col_title, col_btn = st.columns([4, 1])
-with col_btn:
+# --- MAIN PAGE ---
+# Header and Download Buttons Layout
+col_title, col_btns = st.columns([3, 1])
+
+with col_title:
+    st.title("🇧🇧 Sovereign Risk Navigator: Barbados")
+    st.markdown("*A forensic consolidation of public sector liabilities and external buffer adequacy.*")
+
+with col_btns:
+    # Add padding to push the buttons down
+    st.markdown('<div style="padding-top: 25px;"></div>', unsafe_allow_html=True)
+    
+    # Generate the brief dynamically
     report_html = generate_sovereign_report(STATE_FILE)
     st.download_button(
-        label="📄 Download Full Brief (HTML)",
+        label="📄 Download Full Brief",
         data=report_html,
         file_name="Barbados_Sovereign_Risk_Brief.html",
         mime="text/html",
-        type="primary"
+        type="primary",
+        use_container_width=True
     )
+    
+    # Check for addendum and display second button
+    addendum_path = "addendum.html"
+    if os.path.exists(addendum_path):
+        with open(addendum_path, "r", encoding="utf-8") as f:
+            addendum_html = f.read()
+        st.download_button(
+            label="📑 Download Addendum",
+            data=addendum_html,
+            file_name="Barbados_Sovereign_Risk_Addendum.html",
+            mime="text/html",
+            type="secondary",
+            use_container_width=True
+        )
+    else:
+        st.caption("Addendum file not found in repo.")
 
 st.divider()
 
@@ -205,14 +244,19 @@ fig_bridge.update_layout(
     title=dict(text="", font=dict(size=15)),
     showlegend=False,
     height=520,
-    margin=dict(t=20, b=40, l=200, r=40),
+    margin=dict(t=20, b=60, l=280, r=40),
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, sans-serif"),
+    font=dict(family="Inter, sans-serif", color="#d1d5db"),
     xaxis=dict(
         title="BDS (Billions)",
-        tickformat=",.0f",
+        tickformat=",",           
         tickprefix="BDS $",
+        ticksuffix="B",           
+        tickangle=0,
+        dtick=5000000000,         
+        tickvals=[0, 5000000000, 10000000000, 15000000000, 20000000000, 25000000000, 30000000000],
+        ticktext=["$0", "$5B", "$10B", "$15B", "$20B", "$25B", "$30B"],
         gridcolor="rgba(128, 128, 128, 0.2)",
         range=[0, debt_data['true_debt_bds'] * 1.15]
     ),
@@ -254,10 +298,10 @@ for i, label in enumerate(hidden_labels):
         x=[0, val], 
         orientation="h",
         marker=dict(color=colors[label]),
-        text=["", f"{horizon}"],
+        text=["", f"${val/1e9:.1f}B"] if val > 0 else ["", ""],
         textposition="inside",
         insidetextanchor="middle",
-        textfont=dict(color="white", size=9, family="Inter"),
+        textfont=dict(color="white", size=11, family="Inter", weight="bold"),
         hovertemplate=f"<b>{label}</b><br>BDS $%{{x:,.0f}}<br>Horizon: {horizon}<extra></extra>",
         showlegend=True
     ))
@@ -293,14 +337,19 @@ fig_stacked.update_layout(
         title=None
     ),
     height=380,
-    margin=dict(t=80, b=30, l=100, r=20),
+    margin=dict(t=80, b=60, l=100, r=20),
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, sans-serif"),
+    font=dict(family="Inter, sans-serif", color="#d1d5db"),
     xaxis=dict(
         title="BDS (Billions)",
-        tickformat=",.0f",
+        tickformat=",",           
         tickprefix="BDS $",
+        ticksuffix="B",           
+        tickangle=0,
+        dtick=5000000000,         
+        tickvals=[0, 5000000000, 10000000000, 15000000000, 20000000000, 25000000000, 30000000000],
+        ticktext=["$0", "$5B", "$10B", "$15B", "$20B", "$25B", "$30B"],
         gridcolor="rgba(128, 128, 128, 0.2)",
         range=[0, debt_data['true_debt_bds'] * 1.20]
     ),
@@ -382,7 +431,7 @@ with st.expander("6. The IMF's SRDSF Assessment vs. the Consolidated Reality"):
         <div class="evidence-source">Source: {FORENSIC_EVIDENCE['imf_srdsf_assessment']['source']}</div>
     </div>
     """, unsafe_allow_html=True)
-    st.write("**Analytical Implication:** The IMF's SRDSF assesses Barbados' debt as sustainable. But this assessment relies on a perimeter that excludes the BDS $11.56B gap identified in this brief. If those liabilities were consolidated, the SRDSF's mechanical signal would likely shift from 'moderate' to 'high' risk of sovereign stress. This is not a critique of the IMF's methodology — it is an observation about the boundary of the data it uses.")
+    st.write("**Analytical Implication:** The IMF's SRDSF assesses Barbados' debt as sustainable. But this assessment relies on a perimeter that excludes the BDS $9.81B gap identified in this brief. If those liabilities were consolidated, the SRDSF's mechanical signal would likely shift from 'moderate' to 'high' risk of sovereign stress. This is not a critique of the IMF's methodology — it is an observation about the boundary of the data it uses.")
 
 with st.expander("7. The 2025 Eurobond (Parliamentary Resolution, June 24, 2025)"):
     st.markdown(f"""
